@@ -13,7 +13,7 @@ func NewHashiVaultBackend() (Backend, error) {
 	return b, nil
 }
 
-func (h HashiVaultBackend) verify() error {
+func (h HashiVaultBackend) build() error {
 	return nil
 }
 

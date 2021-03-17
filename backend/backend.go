@@ -12,7 +12,7 @@ const (
 )
 
 type Backend interface {
-	verify() error
+	build() error
 	Publish() error
 }
 

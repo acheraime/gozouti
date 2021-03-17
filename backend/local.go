@@ -16,14 +16,14 @@ func NewLocalBackend(dir string) (Backend, error) {
 		DestinationDir: dir,
 	}
 
-	if err := b.verify(); err != nil {
+	if err := b.build(); err != nil {
 		return b, err
 	}
 
 	return b, nil
 }
 
-func (l LocalBackend) verify() error {
+func (l LocalBackend) build() error {
 	if err := checkDir(l.DestinationDir); err != nil {
 		return err
 	}
