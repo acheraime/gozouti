@@ -30,6 +30,10 @@ func NewK8sBackend() (Backend, error) {
 
 func (k KubernetesBackend) build() error {
 	ctx := context.Background()
+	// set k8s configuration
+	if err := k.setk8sconfig(ctx); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -39,14 +43,9 @@ func (k KubernetesBackend) Publish() error {
 	return nil
 }
 
-func (k KubernetesBackend) getk8sconfig(ctx context.Context) (*api.Config, error) {
-	svc, err := container.NewService(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (k *KubernetesBackend) setk8sconfig(ctx context.Context) error {
 	// Bare bone configuration structure
-	config := api.Config{
+	k.config = &api.Config{
 		APIVersion: "v1",
 		Kind:       "Config",
 		Clusters:   map[string]*api.Cluster{},
@@ -56,9 +55,15 @@ func (k KubernetesBackend) getk8sconfig(ctx context.Context) (*api.Config, error
 
 	switch k.CloudProvider {
 	case "gcp":
-
+		svc, err := container.NewService(ctx)
+		if err != nil {
+			return err
+		}
+		if err := k.buildGCPConfig(ctx, svc); err != nil {
+			return err
+		}
 	}
-	return &config, nil
+	return nil
 }
 
 func getK8sclient(conf api.Config)
