@@ -1,10 +1,21 @@
 package backend
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+
+	"google.golang.org/api/container/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd/api"
+)
 
 type KubernetesBackend struct {
-	Type      TLSBackendType
-	NameSpace string
+	Type       TLSBackendType
+	NameSpace  string
+	K8sContext string
+	ProjectID  string
+	Provider   string
+	client     *kubernetes.Clientset
 }
 
 func NewK8sBackend() (Backend, error) {
@@ -15,7 +26,7 @@ func NewK8sBackend() (Backend, error) {
 	return b, nil
 }
 
-func (k KubernetesBackend) verify() error {
+func (k KubernetesBackend) build() error {
 	return nil
 }
 
@@ -23,3 +34,14 @@ func (k KubernetesBackend) Publish() error {
 	fmt.Println("publishing certs to k8s backend")
 	return nil
 }
+
+func getk8sconfig(ctx context.Context) (*api.Config, error) {
+	svc, err := container.NewService(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil, nil
+}
+
+func getK8sclient(conf api.Config)
