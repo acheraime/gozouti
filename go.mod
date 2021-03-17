@@ -16,7 +16,7 @@ require (
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4 // indirect
 	golang.org/x/sys v0.0.0-20210317091845-390168757d9c // indirect
 	golang.org/x/text v0.3.5 // indirect
-	google.golang.org/api v0.42.0 // indirect
+	google.golang.org/api v0.42.0
 	google.golang.org/genproto v0.0.0-20210315173758-2651cd453018 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	k8s.io/client-go v0.20.4
