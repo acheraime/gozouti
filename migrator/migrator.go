@@ -2,8 +2,12 @@ package migrator
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"strings"
 
 	"github.com/acheraime/certutils/backend"
+	"github.com/acheraime/certutils/tls"
 	"github.com/acheraime/certutils/utils"
 )
 
@@ -34,6 +38,11 @@ func (m *Migrator) SetSourceDir(inDir *string) {
 		m.migrateFromDir = true
 	}
 
+}
+
+func (m *Migrator) SetCertFiles(key, cert string) {
+	m.inCert = cert
+	m.inKey = key
 }
 
 func (m *Migrator) SetProjectID(pID *string) {
@@ -102,12 +111,39 @@ func (m *Migrator) Migrate() error {
 		LocalDir:       m.backendDirectory,
 	}
 
-	b, err := backend.NewBackend(m.backendType, backendConfig)
+	certBytes, err := ioutil.ReadFile(m.inCert)
 	if err != nil {
 		return err
 	}
 
-	if !b.Test() {
+	c, err := tls.ParseCertificate(certBytes)
+	if err != nil {
+		return err
+	}
+	if c.IsValid() {
+		log.Print("Certificate is valid")
+	}
+
+	keyBytes, err := ioutil.ReadFile(m.inKey)
+	if err != nil {
+		return err
+	}
+
+	b, err := backend.NewBackend(m.backendType, backendConfig)
+	if err != nil {
+		return err
+	}
+	// Get dns names
+	var secretName string
+	for _, name := range c.Certificate.DNSNames {
+		if strings.HasPrefix(name, "*") {
+			secretName = strings.Replace(name, "*", "star", 1)
+			break
+		}
+	}
+	secretName = strings.ReplaceAll(secretName, ".", "-") + "-ssl"
+
+	if err := b.Migrate(certBytes, keyBytes, secretName); err != nil {
 		return err
 	}
 
