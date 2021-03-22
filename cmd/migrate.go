@@ -56,6 +56,8 @@ to quickly create a Cobra application.`,
 
 		if inDir != "" {
 			m.SetSourceDir(&inDir)
+		} else {
+			m.SetCertFiles(inKey, inCert)
 		}
 
 		if destinationBackend == string(backend.Backendkubernetes) {
