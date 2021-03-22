@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"log"
+	"os"
 
 	"github.com/acheraime/certutils/backend"
 	"github.com/acheraime/certutils/migrator"
@@ -24,9 +25,16 @@ import (
 )
 
 var (
-	sourceDir          string
-	destinationDir     string
+	inDir              string
+	outDir             string
+	inCert             string
+	inKey              string
+	excluded           string
 	destinationBackend string
+	k8sCluster         string
+	k8sProvider        string
+	k8sNamespace       string
+	projectID          string
 )
 
 // migrateCmd represents the migrate command
@@ -40,8 +48,26 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := migrator.NewMigrator(backend.TLSBackendType(destinationBackend)); err != nil {
+		m, err := migrator.NewMigrator(backend.TLSBackendType(destinationBackend))
+		if err != nil {
 			log.Println(err)
+			os.Exit(1)
+		}
+
+		if inDir != "" {
+			m.SetSourceDir(&inDir)
+		}
+
+		if destinationBackend == string(backend.Backendkubernetes) {
+			m.SetK8sCluster(&k8sCluster)
+			m.SetBackendProvider(k8sProvider)
+			m.SetProjectID(&projectID)
+			m.SetK8sNamespace(&k8sNamespace)
+		}
+
+		if err := m.Migrate(); err != nil {
+			log.Println(err)
+			os.Exit(1)
 		}
 	},
 }
@@ -49,12 +75,13 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(migrateCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// migrateCmd.PersistentFlags().String("foo", "", "A help for foo")
-	migrateCmd.Flags().StringVar(&sourceDir, "in", "", "source directory where cert files and keys are located")
-	migrateCmd.Flags().StringVar(&destinationDir, "out", "", "destination directory where to move certificates. Only relevant with local backend")
+	migrateCmd.Flags().StringVarP(&inDir, "indir", "i", "", "source directory where cert files and keys are located")
+	migrateCmd.Flags().StringVarP(&outDir, "outdir", "o", "", "destination directory where to move certificates. Only relevant with 'local' backend")
+	migrateCmd.Flags().StringVarP(&inCert, "cert", "c", "", "source directory where cert files and keys are located")
+	migrateCmd.Flags().StringVarP(&inKey, "key", "k", "", "destination directory where to move certificates. Only relevant with local backend")
 	migrateCmd.Flags().StringVarP(&destinationBackend, "backend", "b", "", "certificate backend type. possible values are: local, hashivault, kubernetes")
+	migrateCmd.Flags().StringVar(&k8sProvider, "k8s-provider", "", "kubernetes cloud provider, specify docker-desktop for docker-desktop")
+	migrateCmd.Flags().StringVar(&k8sCluster, "k8s-cluster", "", "kubernetes cluster name, specify docker-desktop for docker-desktop")
+	migrateCmd.Flags().StringVar(&k8sNamespace, "k8s-namespace", "default", "kubernetes namespace. default to 'default'")
+	migrateCmd.Flags().StringVar(&projectID, "project-id", "", "cloud project ID")
 }

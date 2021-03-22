@@ -2,7 +2,9 @@ package backend
 
 import (
 	"fmt"
-	"os"
+	"log"
+
+	"github.com/acheraime/certutils/utils"
 )
 
 type LocalBackend struct {
@@ -10,21 +12,21 @@ type LocalBackend struct {
 	DestinationDir string
 }
 
-func NewLocalBackend(dir string) (Backend, error) {
+func NewLocalBackend(config BackendConfig) (Backend, error) {
 	b := LocalBackend{
 		Type:           BackendLocal,
-		DestinationDir: dir,
+		DestinationDir: config.LocalDir,
 	}
 
 	if err := b.build(); err != nil {
 		return b, err
 	}
 
-	return b, nil
+	return &b, nil
 }
 
 func (l LocalBackend) build() error {
-	if err := checkDir(l.DestinationDir); err != nil {
+	if err := utils.CheckDir(l.DestinationDir); err != nil {
 		return err
 	}
 
@@ -36,15 +38,11 @@ func (l LocalBackend) Publish() error {
 	return nil
 }
 
-func checkDir(dir string) error {
-	finfo, err := os.Stat(dir)
-	if err != nil {
-		return err
+func (l LocalBackend) Test() bool {
+	if err := utils.CheckDir(l.DestinationDir); err != nil {
+		log.Println(err)
+		return false
 	}
 
-	if !finfo.IsDir() {
-		return fmt.Errorf("%s is not a directory", dir)
-	}
-
-	return nil
+	return true
 }

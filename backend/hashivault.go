@@ -7,10 +7,10 @@ type HashiVaultBackend struct {
 	Token string
 }
 
-func NewHashiVaultBackend() (Backend, error) {
+func NewHashiVaultBackend(config BackendConfig) (Backend, error) {
 	b := HashiVaultBackend{Type: BackendHashiVault}
 
-	return b, nil
+	return &b, nil
 }
 
 func (h HashiVaultBackend) build() error {
@@ -20,4 +20,8 @@ func (h HashiVaultBackend) build() error {
 func (h HashiVaultBackend) Publish() error {
 	fmt.Println("publishing certs to hashi backend")
 	return nil
+}
+
+func (h HashiVaultBackend) Test() bool {
+	return true
 }

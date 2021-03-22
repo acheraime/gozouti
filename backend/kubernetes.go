@@ -4,34 +4,58 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
+	"path/filepath"
 
+	"github.com/acheraime/certutils/utils"
 	"google.golang.org/api/container/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
+type K8sSecret v1.Secret
 type KubernetesBackend struct {
-	Type          TLSBackendType
-	NameSpace     string
-	K8sContext    string
-	ProjectID     string
-	CloudProvider string
-	client        *kubernetes.Clientset
-	config        *api.Config
+	Type        TLSBackendType
+	NameSpace   string
+	K8sContext  string
+	ProjectID   string
+	K8sProvider K8sProvider
+	ClusterName string
+	client      *kubernetes.Clientset
+	config      *api.Config
 }
 
-func NewK8sBackend() (Backend, error) {
+func NewK8sBackend(config BackendConfig) (Backend, error) {
 	b := KubernetesBackend{
-		Type: Backendkubernetes,
+		Type:        Backendkubernetes,
+		ProjectID:   config.ProjectID,
+		NameSpace:   config.DestNameSpace,
+		K8sProvider: config.K8sProvider,
+		ClusterName: config.K8sClusterName,
 	}
 
-	return b, nil
+	if err := b.build(); err != nil {
+		log.Println("unable to build the backend" + err.Error())
+		return nil, err
+	}
+
+	return &b, nil
 }
 
-func (k KubernetesBackend) build() error {
+func (k *KubernetesBackend) build() error {
+	// Build configures and set a client
+	// to interact with
 	ctx := context.Background()
 	// set k8s configuration
-	if err := k.setk8sconfig(ctx); err != nil {
+	if err := k.setK8sConfig(ctx); err != nil {
+		return err
+	}
+	// set k8s client
+	if err := k.setK8sClient(k.ClusterName); err != nil {
 		return err
 	}
 
@@ -43,8 +67,10 @@ func (k KubernetesBackend) Publish() error {
 	return nil
 }
 
-func (k *KubernetesBackend) setk8sconfig(ctx context.Context) error {
-	// Bare bone configuration structure
+func (k *KubernetesBackend) setK8sConfig(ctx context.Context) error {
+	// Barebone configuration structure
+	// uppon which we will build info to
+	// connect to k8s clusters.
 	k.config = &api.Config{
 		APIVersion: "v1",
 		Kind:       "Config",
@@ -53,7 +79,7 @@ func (k *KubernetesBackend) setk8sconfig(ctx context.Context) error {
 		Contexts:   map[string]*api.Context{},
 	}
 
-	switch k.CloudProvider {
+	switch k.K8sProvider {
 	case "gcp":
 		svc, err := container.NewService(ctx)
 		if err != nil {
@@ -62,11 +88,13 @@ func (k *KubernetesBackend) setk8sconfig(ctx context.Context) error {
 		if err := k.buildGCPConfig(ctx, svc); err != nil {
 			return err
 		}
+	case "docker-desktop":
+		if err := k.setK8sClientFromFile(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
-
-func getK8sclient(conf api.Config)
 
 func (k *KubernetesBackend) buildGCPConfig(ctx context.Context, svc *container.Service) error {
 	// Retrieve the list of gke clusters for the project ID
@@ -75,34 +103,131 @@ func (k *KubernetesBackend) buildGCPConfig(ctx context.Context, svc *container.S
 		return err
 	}
 
-	// Iterate over the clusters and start populating the api
-	for _, c := range res.Clusters {
-		// Cluster name
-		clusterName := fmt.Sprintf("gke_%s_%s_%s", k.ProjectID, c.Zone, c.Name)
-		cert, err := base64.StdEncoding.DecodeString(c.MasterAuth.ClientCertificate)
-		if err != nil {
-			return err
-		}
-		// Populate the config object with information from this cluster
-		k.config.Clusters[clusterName] = &api.Cluster{
-			CertificateAuthorityData: cert,
-			Server:                   "https://" + c.Endpoint,
-		}
-		// Contexts
-		k.config.Contexts[clusterName] = &api.Context{
-			Cluster:  clusterName,
-			AuthInfo: clusterName,
-		}
+	if res.Clusters == nil {
+		return fmt.Errorf("There's no k8s cluster in project %s", k.ProjectID)
+	}
 
-		k.config.AuthInfos[clusterName] = &api.AuthInfo{
-			AuthProvider: &api.AuthProviderConfig{
-				Name: "gcp",
-				Config: map[string]string{
-					"scopes": "https://www.googleapis.com/auth/cloud-platform",
-				},
-			},
+	var cluster *container.Cluster
+	for _, c := range res.Clusters {
+		//clusterName := fmt.Sprintf("gke_%s_%s_%s", k.ProjectID, c.Zone, c.Name)
+		if c.Name == k.ClusterName {
+			cluster = c
+			break
 		}
 	}
 
+	if cluster == nil {
+		return fmt.Errorf("Cluster %s was not found in project %s", k.ClusterName, k.ProjectID)
+	}
+
+	// Master certificate
+	cert, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClusterCaCertificate)
+	if err != nil {
+		return err
+	}
+	// Populate the config object with information from this cluster
+	k.config.Clusters[k.ClusterName] = &api.Cluster{
+		CertificateAuthorityData: cert,
+		Server:                   "https://" + cluster.Endpoint,
+	}
+	// Contexts
+	k.config.Contexts[k.ClusterName] = &api.Context{
+		Cluster:  k.ClusterName,
+		AuthInfo: k.ClusterName,
+	}
+
+	k.config.AuthInfos[k.ClusterName] = &api.AuthInfo{
+		AuthProvider: &api.AuthProviderConfig{
+			Name: "gcp",
+			Config: map[string]string{
+				"scopes": "https://www.googleapis.com/auth/cloud-platform",
+			},
+		},
+	}
+
 	return nil
+}
+
+func (k *KubernetesBackend) setK8sClientFromFile() error {
+	var kubefile string
+	if home := utils.HomeDir(); home != "" {
+		kubefile = filepath.Join(home, ".kube", "config")
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags("https://kubernetes.docker.internal:6443", kubefile)
+	if err != nil {
+		log.Println("clientFromFile " + err.Error())
+		return err
+	}
+
+	k8s, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	k.client = k8s
+	return nil
+
+}
+
+func (k *KubernetesBackend) setK8sClient(clusterName string) error {
+	// setK8sClient helper method use the configuration
+	// to expose a clientset object suitable to
+	// interact with k8s api server
+	if k.config.Clusters == nil {
+		return fmt.Errorf("No confguration found for cluster: %s", clusterName)
+	}
+
+	cfg, err := clientcmd.NewNonInteractiveClientConfig(*k.config, clusterName,
+		&clientcmd.ConfigOverrides{CurrentContext: clusterName}, nil).ClientConfig()
+	if err != nil {
+		return err
+	}
+
+	k8s, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+	k.client = k8s
+
+	return nil
+}
+
+// CreateSecret is a helper func that
+// abstracts creation of a secret
+// in a k8s cluster
+func (k KubernetesBackend) CreateSecret(ctx context.Context, namespace string, secretobj *v1.Secret) error {
+	secret, err := k.client.CoreV1().Secrets(namespace).Create(ctx, secretobj, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Secret created: %s", secret.Name)
+
+	return nil
+}
+
+func (k KubernetesBackend) Test() bool {
+	ctx := context.Background()
+	// As a test we will iterate over all the clusters found
+	// and display the pods we find.
+	// If no error we'll return true
+	if k.config.Clusters == nil {
+		log.Println("no cluster found")
+		return false
+	}
+
+	pods, err := k.client.CoreV1().Pods(k.NameSpace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	fmt.Printf("============= List of pods found on cluster %s ==============\n", k.ClusterName)
+	for _, p := range pods.Items {
+		fmt.Printf("%s \n", p.Name)
+	}
+	fmt.Println("============================================================")
+	return true
 }
