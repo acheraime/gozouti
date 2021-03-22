@@ -36,11 +36,11 @@ type Backend interface {
 }
 
 type BackendConfig struct {
-	LocalDir       string
-	K8sClusterName string
-	K8sProvider    K8sProvider
-	ProjectID      string
-	DestNameSpace  string
+	LocalDir       *string
+	K8sClusterName *string
+	K8sProvider    *K8sProvider
+	ProjectID      *string
+	DestNameSpace  *string
 }
 
 func NewBackend(backendType TLSBackendType, cfg BackendConfig) (Backend, error) {
