@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
@@ -52,10 +53,6 @@ func (k *KubernetesBackend) build() error {
 	ctx := context.Background()
 	// set k8s configuration
 	if err := k.setK8sConfig(ctx); err != nil {
-		return err
-	}
-	// set k8s client
-	if err := k.setK8sClient(k.ClusterName); err != nil {
 		return err
 	}
 
@@ -145,6 +142,15 @@ func (k *KubernetesBackend) buildGCPConfig(ctx context.Context, svc *container.S
 		},
 	}
 
+	cfg, err := k.configFromContext(k.ClusterName)
+	if err != nil {
+		return err
+	}
+
+	if err := k.setK8sClient(cfg); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -155,34 +161,37 @@ func (k *KubernetesBackend) setK8sClientFromFile() error {
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("https://kubernetes.docker.internal:6443", kubefile)
-	if err != nil {
-		log.Println("clientFromFile " + err.Error())
-		return err
-	}
 
-	k8s, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
 	}
 
-	k.client = k8s
+	if err := k.setK8sClient(config); err != nil {
+		return err
+	}
+
 	return nil
 
 }
 
-func (k *KubernetesBackend) setK8sClient(clusterName string) error {
-	// setK8sClient helper method use the configuration
-	// to expose a clientset object suitable to
-	// interact with k8s api server
+func (k KubernetesBackend) configFromContext(clusterName string) (*rest.Config, error) {
 	if k.config.Clusters == nil {
-		return fmt.Errorf("No confguration found for cluster: %s", clusterName)
+		return nil, fmt.Errorf("No confguration found for cluster: %s", clusterName)
 	}
 
 	cfg, err := clientcmd.NewNonInteractiveClientConfig(*k.config, clusterName,
 		&clientcmd.ConfigOverrides{CurrentContext: clusterName}, nil).ClientConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	return cfg, nil
+}
+
+func (k *KubernetesBackend) setK8sClient(cfg *rest.Config) error {
+	// setK8sClient helper method use the configuration
+	// to expose a clientset object suitable to
+	// interact with k8s api server
 
 	k8s, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
