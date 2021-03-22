@@ -33,6 +33,7 @@ type Backend interface {
 	build() error
 	Publish() error
 	Test() bool
+	Migrate([]byte, []byte, string) error
 }
 
 type BackendConfig struct {
