@@ -13,9 +13,13 @@ type LocalBackend struct {
 }
 
 func NewLocalBackend(config BackendConfig) (Backend, error) {
+	if config.LocalDir == nil {
+		return nil, fmt.Errorf("please specify the local directory")
+	}
+
 	b := LocalBackend{
 		Type:           BackendLocal,
-		DestinationDir: config.LocalDir,
+		DestinationDir: *config.LocalDir,
 	}
 
 	if err := b.build(); err != nil {
