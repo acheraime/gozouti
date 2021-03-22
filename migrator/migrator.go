@@ -18,6 +18,7 @@ type Migrator struct {
 	backendCluster   *string
 	backendNamespace *string
 	backendType      backend.TLSBackendType
+	backendDirectory *string
 	errors           []error
 }
 
@@ -57,6 +58,10 @@ func (m *Migrator) SetBackendProvider(p string) {
 	m.backendProvider = &provider
 }
 
+func (m *Migrator) SetBackendDirectory(d *string) {
+	m.backendDirectory = d
+}
+
 func (m Migrator) validate() error {
 	switch m.backendType {
 	case backend.Backendkubernetes:
@@ -90,10 +95,11 @@ func (m *Migrator) Migrate() error {
 		return err
 	}
 	backendConfig := backend.BackendConfig{
-		K8sClusterName: *m.backendCluster,
-		K8sProvider:    *m.backendProvider,
-		ProjectID:      *m.backendProjectID,
-		DestNameSpace:  *m.backendNamespace,
+		K8sClusterName: m.backendCluster,
+		K8sProvider:    m.backendProvider,
+		ProjectID:      m.backendProjectID,
+		DestNameSpace:  m.backendNamespace,
+		LocalDir:       m.backendDirectory,
 	}
 
 	b, err := backend.NewBackend(m.backendType, backendConfig)
