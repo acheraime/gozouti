@@ -33,10 +33,16 @@ type KubernetesBackend struct {
 func NewK8sBackend(config BackendConfig) (Backend, error) {
 	b := KubernetesBackend{
 		Type:        Backendkubernetes,
-		ProjectID:   config.ProjectID,
-		NameSpace:   config.DestNameSpace,
-		K8sProvider: config.K8sProvider,
-		ClusterName: config.K8sClusterName,
+		K8sProvider: *config.K8sProvider,
+		ClusterName: *config.K8sClusterName,
+	}
+
+	if config.DestNameSpace != nil {
+		b.NameSpace = *config.DestNameSpace
+	}
+
+	if config.ProjectID != nil {
+		b.ProjectID = *config.ProjectID
 	}
 
 	if err := b.build(); err != nil {
