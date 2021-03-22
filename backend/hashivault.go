@@ -25,3 +25,7 @@ func (h HashiVaultBackend) Publish() error {
 func (h HashiVaultBackend) Test() bool {
 	return true
 }
+
+func (h HashiVaultBackend) Migrate(cert, key []byte, certName string) error {
+	return fmt.Errorf("Not implemented")
+}

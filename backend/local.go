@@ -50,3 +50,7 @@ func (l LocalBackend) Test() bool {
 
 	return true
 }
+
+func (l LocalBackend) Migrate(cert, key []byte, certName string) error {
+	return fmt.Errorf("Not implemented")
+}

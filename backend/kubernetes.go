@@ -212,13 +212,31 @@ func (k *KubernetesBackend) setK8sClient(cfg *rest.Config) error {
 // CreateSecret is a helper func that
 // abstracts creation of a secret
 // in a k8s cluster
-func (k KubernetesBackend) CreateSecret(ctx context.Context, namespace string, secretobj *v1.Secret) error {
+func (k KubernetesBackend) createSecret(ctx context.Context, namespace string, secretobj *v1.Secret) error {
 	secret, err := k.client.CoreV1().Secrets(namespace).Create(ctx, secretobj, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Secret created: %s", secret.Name)
+
+	return nil
+}
+
+func (k KubernetesBackend) Migrate(cert, key []byte, secretName string) error {
+	secretData := map[string][]byte{
+		"tls.crt": []byte(base64.StdEncoding.EncodeToString(cert)),
+		"tls.key": []byte(base64.StdEncoding.EncodeToString(key)),
+	}
+	secret := &v1.Secret{
+		Type: "kubernetes.io/tls",
+		Data: secretData,
+	}
+	secret.Name = secretName
+
+	if err := k.createSecret(context.TODO(), k.NameSpace, secret); err != nil {
+		return err
+	}
 
 	return nil
 }
