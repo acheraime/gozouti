@@ -65,6 +65,10 @@ to quickly create a Cobra application.`,
 			m.SetK8sNamespace(&k8sNamespace)
 		}
 
+		if destinationBackend == string(backend.BackendLocal) {
+			m.SetBackendDirectory(&outDir)
+		}
+
 		if err := m.Migrate(); err != nil {
 			log.Println(err)
 			os.Exit(1)
