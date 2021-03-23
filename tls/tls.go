@@ -32,9 +32,9 @@ func ParseCertificate(c []byte) (*ParsedCertificate, error) {
 
 	}
 	//log.Println(cert.DNSNames, cert.Issuer, cert.NotBefore, cert.NotAfter, cert.Subject, cert.SerialNumber)
-	intermediates := x509.NewCertPool()
-	intermediates.AddCert(certs[2])
-	intermediates.AddCert(certs[3])
+	// intermediates := x509.NewCertPool()
+	// intermediates.AddCert(certs[2])
+	// intermediates.AddCert(certs[3])
 
 	// verify certificate
 	// verfiyOptions := x509.VerifyOptions{
