@@ -131,7 +131,10 @@ func secretNameFromDNS(names []string) string {
 			secretName = strings.Replace(name, "*", secretPrefix, 1)
 			break
 		}
+
+		secretName = name
 	}
+
 	secretName = strings.ReplaceAll(secretName, ".", "-") + "-" + secretSuffix
 
 	return secretName
