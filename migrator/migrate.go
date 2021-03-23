@@ -52,7 +52,7 @@ func (m *Runner) setData() error {
 			return err
 		}
 		if c.IsValid() {
-			log.Print("Certificate is valid")
+			log.Println("Certificate is valid")
 		}
 
 		certName := secretNameFromDNS(c.Certificate.DNSNames)
@@ -74,7 +74,7 @@ func (m Runner) Run() error {
 			return err
 		}
 	}
-	log.Println("migration comple")
+	log.Println("migration complete")
 	return nil
 }
 

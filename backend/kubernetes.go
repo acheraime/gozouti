@@ -218,7 +218,7 @@ func (k KubernetesBackend) createSecret(ctx context.Context, namespace string, s
 		return err
 	}
 
-	fmt.Printf("Secret created: %s", secret.Name)
+	fmt.Printf("Secret created: %s\n", secret.Name)
 
 	return nil
 }
