@@ -3,7 +3,6 @@ package migrator
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"strings"
 
@@ -55,7 +54,7 @@ func (m *Runner) setData() error {
 			return err
 		}
 		if c.IsValid() {
-			log.Println("Certificate is valid")
+			fmt.Println("Certificate is valid")
 		}
 
 		certName := secretNameFromDNS(c.Certificate.DNSNames)
@@ -98,7 +97,7 @@ func (m *Runner) setData() error {
 		for c, k := range dmap {
 			certPath := filepath.Join(m.migrator.sourceDir, c)
 			keyPath := filepath.Join(m.migrator.sourceDir, k)
-			fmt.Println("processing" + c)
+			fmt.Println("processing ->" + c)
 			if err := buildData(certPath, keyPath); err != nil {
 				return err
 			}
@@ -115,13 +114,13 @@ func (m Runner) Run() error {
 		return fmt.Errorf("no tls data found")
 	}
 
-	log.Println("Starting migration")
+	fmt.Println("Starting migration")
 	for name, cert := range m.data {
 		if err := m.migrator.backend.Migrate(cert.cert, cert.key, name); err != nil {
 			return err
 		}
 	}
-	log.Println("migration complete")
+	fmt.Println("migration complete")
 	return nil
 }
 
