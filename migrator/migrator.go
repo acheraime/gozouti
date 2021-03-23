@@ -2,12 +2,8 @@ package migrator
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
-	"strings"
 
 	"github.com/acheraime/certutils/backend"
-	"github.com/acheraime/certutils/tls"
 	"github.com/acheraime/certutils/utils"
 )
 
@@ -22,6 +18,7 @@ type Migrator struct {
 	backendCluster   *string
 	backendNamespace *string
 	backendType      backend.TLSBackendType
+	backend          backend.Backend
 	backendDirectory *string
 	errors           []error
 }
@@ -110,42 +107,21 @@ func (m *Migrator) Migrate() error {
 		DestNameSpace:  m.backendNamespace,
 		LocalDir:       m.backendDirectory,
 	}
-
-	certBytes, err := ioutil.ReadFile(m.inCert)
-	if err != nil {
-		return err
-	}
-
-	c, err := tls.ParseCertificate(certBytes)
-	if err != nil {
-		return err
-	}
-	if c.IsValid() {
-		log.Print("Certificate is valid")
-	}
-
-	keyBytes, err := ioutil.ReadFile(m.inKey)
-	if err != nil {
-		return err
-	}
-
+	// set backend
 	b, err := backend.NewBackend(m.backendType, backendConfig)
 	if err != nil {
 		return err
 	}
-	// Get dns names
-	var secretName string
-	for _, name := range c.Certificate.DNSNames {
-		if strings.HasPrefix(name, "*") {
-			secretName = strings.Replace(name, "*", "star", 1)
-			break
-		}
-	}
-	secretName = strings.ReplaceAll(secretName, ".", "-") + "-ssl"
-
-	if err := b.Migrate(certBytes, keyBytes, secretName); err != nil {
+	m.backend = b
+	// Get a runner
+	runner, err := NewRunner(*m)
+	if err != nil {
 		return err
 	}
 
+	// Run the migration
+	if err := runner.Run(); err != nil {
+		return err
+	}
 	return nil
 }
