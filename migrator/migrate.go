@@ -1,8 +1,10 @@
 package migrator
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/acheraime/certutils/tls"
@@ -34,14 +36,15 @@ func NewRunner(migrator Migrator) (*Runner, error) {
 }
 
 func (m *Runner) setData() error {
-	if !m.migrator.migrateFromDir {
+	var data = map[string]TLSData{}
+	var buildData = func(cert, key string) error {
 		// certificate bytes
-		certBytes, err := ioutil.ReadFile(m.migrator.inCert)
+		certBytes, err := ioutil.ReadFile(cert)
 		if err != nil {
 			return err
 		}
 		// private key bytes
-		keyBytes, err := ioutil.ReadFile(m.migrator.inKey)
+		keyBytes, err := ioutil.ReadFile(key)
 		if err != nil {
 			return err
 		}
@@ -56,18 +59,62 @@ func (m *Runner) setData() error {
 		}
 
 		certName := secretNameFromDNS(c.Certificate.DNSNames)
-		m.data = map[string]TLSData{
-			certName: TLSData{
-				cert: certBytes,
-				key:  keyBytes,
-			},
+		data[certName] = TLSData{
+			cert: certBytes,
+			key:  keyBytes,
+		}
+
+		return nil
+	}
+
+	if !m.migrator.migrateFromDir {
+		if err := buildData(m.migrator.inCert, m.migrator.inKey); err != nil {
+			return err
+		}
+
+	} else {
+		// walk directory and create cert, key pair
+		dirFiles, err := ioutil.ReadDir(m.migrator.sourceDir)
+		if err != nil {
+			return err
+		}
+		dmap := map[string]string{}
+		for _, file := range dirFiles {
+			if file.IsDir() {
+				continue
+			}
+			if isKey(file.Name()) {
+				continue
+			}
+			// this is a cert file
+			for _, nf := range dirFiles {
+				if splitExt(file.Name()) == splitExt(nf.Name()) && isKey(nf.Name()) {
+					dmap[file.Name()] = nf.Name()
+				}
+			}
+
+		}
+
+		for c, k := range dmap {
+			certPath := filepath.Join(m.migrator.sourceDir, c)
+			keyPath := filepath.Join(m.migrator.sourceDir, k)
+			fmt.Println("processing" + c)
+			if err := buildData(certPath, keyPath); err != nil {
+				return err
+			}
 		}
 	}
+
+	m.data = data
 
 	return nil
 }
 
 func (m Runner) Run() error {
+	if m.data == nil {
+		return fmt.Errorf("no tls data found")
+	}
+
 	log.Println("Starting migration")
 	for name, cert := range m.data {
 		if err := m.migrator.backend.Migrate(cert.cert, cert.key, name); err != nil {
@@ -89,4 +136,21 @@ func secretNameFromDNS(names []string) string {
 	secretName = strings.ReplaceAll(secretName, ".", "-") + "-" + secretSuffix
 
 	return secretName
+}
+
+func isPem(in string) bool {
+	switch filepath.Ext(in) {
+	case ".pem", ".crt", ".cer", ".key":
+		return true
+	default:
+		return false
+	}
+}
+
+func isKey(in string) bool {
+	return isPem(in) && filepath.Ext(in) == ".key"
+}
+
+func splitExt(f string) string {
+	return strings.Split(f, ".")[0]
 }
