@@ -10,6 +10,7 @@ import (
 	"github.com/acheraime/certutils/utils"
 	"google.golang.org/api/container/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -233,8 +234,12 @@ func (k KubernetesBackend) Migrate(cert, key []byte, secretName string) error {
 		Data: secretData,
 	}
 	secret.Name = secretName
+	fmt.Printf("Migrating %s\n", secretName)
 
 	if err := k.createSecret(context.TODO(), k.NameSpace, secret); err != nil {
+		if errors.IsAlreadyExists(err) {
+			return nil
+		}
 		return err
 	}
 
