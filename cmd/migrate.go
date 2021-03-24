@@ -83,8 +83,8 @@ func init() {
 
 	migrateCmd.Flags().StringVarP(&inDir, "indir", "i", "", "source directory where cert files and keys are located")
 	migrateCmd.Flags().StringVarP(&outDir, "outdir", "o", "", "destination directory where to move certificates. Only relevant with 'local' backend")
-	migrateCmd.Flags().StringVarP(&inCert, "cert", "c", "", "source directory where cert files and keys are located")
-	migrateCmd.Flags().StringVarP(&inKey, "key", "k", "", "destination directory where to move certificates. Only relevant with local backend")
+	migrateCmd.Flags().StringVarP(&inCert, "cert", "c", "", "path to certificate file in PEM format")
+	migrateCmd.Flags().StringVarP(&inKey, "key", "k", "", "path to key file in PEM format")
 	migrateCmd.Flags().StringVarP(&destinationBackend, "backend", "b", "", "certificate backend type. possible values are: local, hashivault, kubernetes")
 	migrateCmd.Flags().StringVar(&k8sProvider, "k8s-provider", "", "kubernetes cloud provider, specify docker-desktop for docker-desktop")
 	migrateCmd.Flags().StringVar(&k8sCluster, "k8s-cluster", "", "kubernetes cluster name, specify docker-desktop for docker-desktop")
