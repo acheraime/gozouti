@@ -234,7 +234,6 @@ func (k KubernetesBackend) Migrate(cert, key []byte, secretName string) error {
 		Type: "kubernetes.io/tls",
 		Data: secretData,
 	}
-	secret.APIVersion = "v1"
 	secret.Name = secretName
 
 	fmt.Printf("Migrating %s\n", secretName)
