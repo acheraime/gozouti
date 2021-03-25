@@ -226,16 +226,18 @@ func (k KubernetesBackend) createSecret(ctx context.Context, namespace string, s
 
 func (k KubernetesBackend) Migrate(cert, key []byte, secretName string) error {
 	secretData := map[string][]byte{
-		"tls.crt": []byte(base64.StdEncoding.EncodeToString(cert)),
-		"tls.key": []byte(base64.StdEncoding.EncodeToString(key)),
+		"tls.crt": cert,
+		"tls.key": key,
 	}
+
 	secret := &v1.Secret{
 		Type: "kubernetes.io/tls",
 		Data: secretData,
 	}
+	secret.APIVersion = "v1"
 	secret.Name = secretName
-	fmt.Printf("Migrating %s\n", secretName)
 
+	fmt.Printf("Migrating %s\n", secretName)
 	if err := k.createSecret(context.TODO(), k.NameSpace, secret); err != nil {
 		if errors.IsAlreadyExists(err) {
 			return nil
