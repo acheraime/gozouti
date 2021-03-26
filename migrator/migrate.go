@@ -37,6 +37,18 @@ func NewRunner(migrator Migrator) (*Runner, error) {
 func (m *Runner) setData() error {
 	var data = map[string]TLSData{}
 	var buildData = func(cert, key string) error {
+		// Check if cert or key files are part of
+		// the exclusion list
+		if m.migrator.excluded != nil {
+			for _, exclusion := range m.migrator.excluded {
+				exclusionPath := m.buildSourceFilePath(exclusion)
+				if exclusionPath == cert || exclusionPath == key {
+					fmt.Println("Will not migrate: " + exclusion)
+					return nil
+				}
+			}
+		}
+
 		// certificate bytes
 		certBytes, err := ioutil.ReadFile(cert)
 		if err != nil {
@@ -53,8 +65,8 @@ func (m *Runner) setData() error {
 		if err != nil {
 			return err
 		}
-		if c.IsValid() {
-			fmt.Println("Certificate is valid")
+		if !c.IsValid() {
+			fmt.Println("Certificate is not valid")
 		}
 
 		certName := secretNameFromDNS(c.Certificate.DNSNames)
@@ -67,6 +79,8 @@ func (m *Runner) setData() error {
 	}
 
 	if !m.migrator.migrateFromDir {
+		// Migrate cert and key files provided
+		// as arguments to the migrate command
 		if err := buildData(m.migrator.inCert, m.migrator.inKey); err != nil {
 			return err
 		}
@@ -95,9 +109,9 @@ func (m *Runner) setData() error {
 		}
 
 		for c, k := range dmap {
-			certPath := filepath.Join(m.migrator.sourceDir, c)
-			keyPath := filepath.Join(m.migrator.sourceDir, k)
-			fmt.Println("processing ->" + c)
+			certPath := m.buildSourceFilePath(c)
+			keyPath := m.buildSourceFilePath(k)
+			fmt.Println("processing -> " + c)
 			if err := buildData(certPath, keyPath); err != nil {
 				return err
 			}
@@ -107,6 +121,10 @@ func (m *Runner) setData() error {
 	m.data = data
 
 	return nil
+}
+
+func (m Runner) buildSourceFilePath(f string) string {
+	return filepath.Join(m.migrator.sourceDir, f)
 }
 
 func (m Runner) Run() error {
