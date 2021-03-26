@@ -35,6 +35,7 @@ var (
 	k8sProvider        string
 	k8sNamespace       string
 	projectID          string
+	exclusionList      string
 )
 
 // migrateCmd represents the migrate command
@@ -71,6 +72,10 @@ to quickly create a Cobra application.`,
 			m.SetBackendDirectory(&outDir)
 		}
 
+		if exclusionList != "" {
+			m.SetExclusion(exclusionList)
+		}
+
 		if err := m.Migrate(); err != nil {
 			log.Println(err)
 			os.Exit(1)
@@ -90,4 +95,5 @@ func init() {
 	migrateCmd.Flags().StringVar(&k8sCluster, "k8s-cluster", "", "kubernetes cluster name, specify docker-desktop for docker-desktop")
 	migrateCmd.Flags().StringVar(&k8sNamespace, "k8s-namespace", "default", "kubernetes namespace. default to 'default'")
 	migrateCmd.Flags().StringVar(&projectID, "project-id", "", "cloud project ID")
+	migrateCmd.Flags().StringVar(&exclusionList, "exclude", "", "comma seperated list of files to exclude from the migration")
 }

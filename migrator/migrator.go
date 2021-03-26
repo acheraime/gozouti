@@ -2,6 +2,7 @@ package migrator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/acheraime/certutils/backend"
 	"github.com/acheraime/certutils/utils"
@@ -66,6 +67,15 @@ func (m *Migrator) SetBackendProvider(p string) {
 
 func (m *Migrator) SetBackendDirectory(d *string) {
 	m.backendDirectory = d
+}
+
+func (m *Migrator) SetExclusion(list string) {
+	var exclusionList []string
+	if list != "" {
+		exclusionList = strings.Split(list, ",")
+	}
+
+	m.excluded = exclusionList
 }
 
 func (m Migrator) validate() error {
