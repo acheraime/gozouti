@@ -146,6 +146,7 @@ func secretNameFromDNS(names []string) string {
 	var secretName string
 	for _, name := range names {
 		if strings.HasPrefix(name, "*") {
+			fmt.Println(name)
 			secretName = strings.Replace(name, "*", secretPrefix, 1)
 			break
 		}

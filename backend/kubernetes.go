@@ -8,11 +8,17 @@ import (
 	"path/filepath"
 
 	"github.com/acheraime/certutils/utils"
+	traefikScheme "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/generated/clientset/versioned/scheme"
+	v1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefik/v1alpha1"
 	"google.golang.org/api/container/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -28,6 +34,7 @@ type KubernetesBackend struct {
 	K8sProvider K8sProvider
 	ClusterName string
 	client      *kubernetes.Clientset
+	apiExClient *clientset.Clientset
 	config      *api.Config
 }
 
@@ -206,6 +213,10 @@ func (k *KubernetesBackend) setK8sClient(cfg *rest.Config) error {
 	}
 
 	k.client = k8s
+	k.apiExClient, err = clientset.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -230,6 +241,40 @@ func (k KubernetesBackend) updateSecret(ctx context.Context, namespace string, s
 		return err
 	}
 	fmt.Printf("Secret updated: %s\n", updated.Name)
+
+	return nil
+}
+
+func (k KubernetesBackend) createCustom(ctx context.Context, middleware *v1alpha1.Middleware) error {
+	_ = traefikScheme.AddToScheme(scheme.Scheme)
+	response := &v1alpha1.Middleware{}
+	var middlewaresResource = schema.GroupVersionResource{Group: "traefik.containo.us", Version: "v1alpha1", Resource: "middlewares"}
+	options := &metav1.GetOptions{}
+	options.ResourceVersion = middlewaresResource.String()
+	options.Kind = "Middleware"
+
+	// err := k.apiExClient.RESTClient().Post().
+	// 	Resource("middlewares").
+	// 	Namespace(k.NameSpace).
+	// 	VersionedParams(&metav1.CreateOptions{}, traefikScheme.ParameterCodec).
+	// 	Body(middleware).
+	// 	Do(ctx).
+	// 	Into(response)
+	// if err != nil {
+	// 	return err
+	// }
+	err := k.apiExClient.RESTClient().Get().Resource("middlewares").VersionedParams(options, traefikScheme.ParameterCodec).Do(ctx).Into(response)
+	if err != nil {
+		return err
+	}
+	fmt.Print(string(response.Name))
+	return nil
+}
+
+func (k KubernetesBackend) CreateTraefikMiddleWare(middleware *v1alpha1.Middleware) error {
+	if err := k.createCustom(context.TODO(), middleware); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -283,4 +328,8 @@ func (k KubernetesBackend) Test() bool {
 	}
 	fmt.Println("============================================================")
 	return true
+}
+
+func (h KubernetesBackend) GetType() TLSBackendType {
+	return h.Type
 }

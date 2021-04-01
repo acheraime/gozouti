@@ -1,6 +1,10 @@
 package backend
 
-import "errors"
+import (
+	"errors"
+
+	v1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefik/v1alpha1"
+)
 
 type TLSBackendType string
 
@@ -34,6 +38,8 @@ type Backend interface {
 	Publish() error
 	Test() bool
 	Migrate([]byte, []byte, string) error
+	GetType() TLSBackendType
+	CreateTraefikMiddleWare(*v1alpha1.Middleware) error
 }
 
 type BackendConfig struct {
