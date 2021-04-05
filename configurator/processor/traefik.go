@@ -22,21 +22,34 @@ type TraefikRedirect struct {
 	backend   backend.Backend
 	namespace string
 	outDir    string
+	alias     string
 }
 
-func NewTraefikRedirect(input [][]string, b backend.Backend) (Processor, error) {
+type TRedirectConfig struct {
+	Alias     string
+	Namespace string
+	OutputDir string
+	BaseHost  string
+}
+
+func NewTraefikRedirect(cfg TRedirectConfig, input [][]string, b backend.Backend) (Processor, error) {
 	if b.GetType() != backend.Backendkubernetes {
 		return nil, fmt.Errorf("traefik configuration requires a kubernetes backend type")
 	}
 
-	tr := TraefikRedirect{
-		backend:   b,
-		namespace: "default",
-		outDir:    "/Users/acheraime/Desktop/testout",
-		baseHost:  "grasshopperdealer.com",
+	if cfg.Namespace == "" {
+		cfg.Namespace = "default"
 	}
 
-	resources, err := NewRedirectResources(input, true, "grasshopper", "grasshopperdealer.com")
+	tr := TraefikRedirect{
+		backend:   b,
+		namespace: cfg.Namespace,
+		outDir:    cfg.OutputDir,
+		baseHost:  cfg.BaseHost,
+		alias:     cfg.Alias,
+	}
+
+	resources, err := NewRedirectResources(input, true, cfg.Alias, cfg.BaseHost)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +70,7 @@ func (t TraefikRedirect) build(o io.Writer) error {
 
 	middlewares := []traefik.Middleware{}
 
-	regexTemplate, err := template.New("regex").Parse(`^https://(.*").({{ .URLHost}}){{ .Regex }}?$$`)
+	regexTemplate, err := template.New("regex").Parse(`^https://(.*).({{ .URLHost }}){{ .Regex }}?$$`)
 	if err != nil {
 		return err
 	}
@@ -88,7 +101,8 @@ func (t TraefikRedirect) build(o io.Writer) error {
 	}
 
 	// create a chain of middlewares
-	chain, err := traefik.NewChain("grasshopper-redirect", t.namespace, middlewares)
+	redirectName := t.alias + "-redirects"
+	chain, err := traefik.NewChain(redirectName, t.namespace, middlewares)
 	if err != nil {
 		return err
 	}
@@ -113,7 +127,7 @@ func (t TraefikRedirect) Generate() error {
 	}
 
 	// Default file name
-	fileName := fmt.Sprintf("generated-%s.yaml", time.Now().Format("20060102150405"))
+	fileName := fmt.Sprintf("%s-generated-%s.yaml", t.alias, time.Now().Format("20060102150405"))
 	outPath := filepath.Join(t.outDir, fileName)
 	f, err := os.OpenFile(outPath, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
