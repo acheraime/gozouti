@@ -34,9 +34,13 @@ type Options struct {
 	InType   InputType
 	Type     ConfigType
 	Platform Platform
-	DryRun   bool
-	buffer   bytes.Buffer
-	dupes    []map[string]string
+	// Traefik redirect specific configuration
+	RedirectAlias       string
+	RedirectNamespace   string
+	RedirectBaseHostURL string
+	DryRun              bool
+	buffer              bytes.Buffer
+	dupes               []map[string]string
 }
 
 func NewConfigurator(options Options) (processor.Processor, error) {
@@ -77,7 +81,12 @@ func NewConfigurator(options Options) (processor.Processor, error) {
 		if err != nil {
 			return nil, err
 		}
-		proc, err = processor.NewTraefikRedirect(in, b)
+		proc, err = processor.NewTraefikRedirect(processor.TRedirectConfig{
+			Alias:     options.RedirectAlias,
+			Namespace: options.RedirectNamespace,
+			BaseHost:  options.RedirectBaseHostURL,
+			OutputDir: options.Out,
+		}, in, b)
 	default:
 		return nil, fmt.Errorf("patform %s is not currently supported", options.Platform)
 	}

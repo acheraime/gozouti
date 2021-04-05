@@ -25,8 +25,12 @@ import (
 )
 
 var (
-	cfgInFile string
-	cfgOutDir string
+	cfgInFile        string
+	cfgOutDir        string
+	cfgRedirectAlias string
+	cfgRedirectHOST  string
+	cfgRedirectProxy string
+	cfgDry           bool
 )
 
 // confgenCmd represents the confgen command
@@ -44,12 +48,14 @@ to quickly create a Cobra application.`,
 			cfgOutDir = utils.UserDesktop()
 		}
 		p, err := configurator.NewConfigurator(configurator.Options{
-			In:       cfgInFile,
-			Out:      cfgOutDir,
-			Type:     configurator.RedirectConfig,
-			Platform: configurator.TraefikPlatform,
-			InType:   configurator.CSVInput,
-			DryRun:   true,
+			In:                  cfgInFile,
+			Out:                 cfgOutDir,
+			Type:                configurator.RedirectConfig,
+			Platform:            configurator.TraefikPlatform,
+			InType:              configurator.CSVInput,
+			DryRun:              cfgDry,
+			RedirectAlias:       cfgRedirectAlias,
+			RedirectBaseHostURL: cfgRedirectHOST,
 		})
 		if err != nil {
 			fmt.Println(err.Error())
@@ -60,6 +66,15 @@ to quickly create a Cobra application.`,
 		// 	fmt.Println("unable to generate configuration. " + err.Error())
 		// 	os.Exit(1)
 		// }
+		if cfgDry {
+			if err := p.DryRun("test"); err != nil {
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
+
+			os.Exit(0)
+		}
+
 		if err = p.Generate(); err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
@@ -75,7 +90,11 @@ func init() {
 
 	confgenCmd.Flags().StringVarP(&cfgInFile, "input", "i", "", "location of CSV file where to read redirects paths from")
 	confgenCmd.Flags().StringVarP(&cfgOutDir, "outdir", "o", "", "Directory where to dump generated configuration file")
-
+	confgenCmd.Flags().StringVarP(&cfgRedirectAlias, "redirect-alias", "a", "", "Alias that will be added to traefik redirect middleware")
+	confgenCmd.Flags().StringVarP(&cfgRedirectHOST, "redirect-host", "H", "", "host name part of the base url for location only redirects")
+	confgenCmd.Flags().BoolVar(&cfgDry, "dry", false, "dry run will simulate the configuration and print it to stdout")
+	//Required flags
+	confgenCmd.MarkFlagRequired("input")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
