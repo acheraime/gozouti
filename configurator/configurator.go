@@ -38,6 +38,7 @@ type Options struct {
 	RedirectAlias       string
 	RedirectNamespace   string
 	RedirectBaseHostURL string
+	RedirectRewriteHost bool
 	DryRun              bool
 	buffer              bytes.Buffer
 	dupes               []map[string]string
@@ -82,10 +83,11 @@ func NewConfigurator(options Options) (processor.Processor, error) {
 			return nil, err
 		}
 		proc, err = processor.NewTraefikRedirect(processor.TRedirectConfig{
-			Alias:     options.RedirectAlias,
-			Namespace: options.RedirectNamespace,
-			BaseHost:  options.RedirectBaseHostURL,
-			OutputDir: options.Out,
+			Alias:       options.RedirectAlias,
+			Namespace:   options.RedirectNamespace,
+			BaseHost:    options.RedirectBaseHostURL,
+			OutputDir:   options.Out,
+			RewriteHost: options.RedirectRewriteHost,
 		}, in, b)
 	default:
 		return nil, fmt.Errorf("patform %s is not currently supported", options.Platform)

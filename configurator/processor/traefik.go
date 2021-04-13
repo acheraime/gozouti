@@ -26,10 +26,11 @@ type TraefikRedirect struct {
 }
 
 type TRedirectConfig struct {
-	Alias     string
-	Namespace string
-	OutputDir string
-	BaseHost  string
+	Alias       string
+	Namespace   string
+	OutputDir   string
+	BaseHost    string
+	RewriteHost bool
 }
 
 func NewTraefikRedirect(cfg TRedirectConfig, input [][]string, b backend.Backend) (Processor, error) {
@@ -49,7 +50,12 @@ func NewTraefikRedirect(cfg TRedirectConfig, input [][]string, b backend.Backend
 		alias:     cfg.Alias,
 	}
 
-	resources, err := NewRedirectResources(input, true, cfg.Alias, cfg.BaseHost)
+	var parseURL = true
+	if cfg.RewriteHost {
+		parseURL = false
+	}
+
+	resources, err := NewRedirectResources(input, parseURL, cfg.Alias, cfg.BaseHost, cfg.RewriteHost)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +66,7 @@ func NewTraefikRedirect(cfg TRedirectConfig, input [][]string, b backend.Backend
 
 func (t TraefikRedirect) build(o io.Writer) error {
 	if t.resources.Resources == nil {
-		return fmt.Errorf("nothing to generate: %s", t.resources.Resources)
+		return fmt.Errorf("nothing to generate: %v", t.resources.Resources)
 	}
 
 	// reset the buffer
@@ -88,8 +94,11 @@ func (t TraefikRedirect) build(o io.Writer) error {
 		if err := replTemplate.Execute(&replStr, r); err != nil {
 			return err
 		}
-
-		m, err := traefik.NewRegexRedirect(r.Name, t.namespace, regexStr.String(), replStr.String(), true)
+		replacement := r.Replacement
+		if !r.ReWriteHost {
+			replacement = replStr.String()
+		}
+		m, err := traefik.NewRegexRedirect(r.Name, t.namespace, regexStr.String(), replacement, true)
 		if err != nil {
 			return err
 		}

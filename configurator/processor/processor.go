@@ -26,7 +26,7 @@ type Processor interface {
 	Generate() error
 }
 
-func NewRedirectResources(input [][]string, parseURL bool, alias string, URLHost string) (RedirectResources, error) {
+func NewRedirectResources(input [][]string, parseURL bool, alias string, URLHost string, hostRewrite bool) (RedirectResources, error) {
 	var checkBucket = map[string]string{}
 	var resources = new(RedirectResources)
 	var res = make([]RedirectResource, 0)
@@ -74,7 +74,7 @@ func NewRedirectResources(input [][]string, parseURL bool, alias string, URLHost
 		rFrom = utils.AddSlash(rFrom)
 		rTo = utils.AddSlash(rTo)
 		name := fmt.Sprintf("%s-%s", alias, utils.Sanitize(rFrom))
-		res = append(res, RedirectResource{Regex: rFrom, Replacement: rTo, Name: name, URLHost: URLHost})
+		res = append(res, RedirectResource{Regex: rFrom, Replacement: rTo, Name: name, URLHost: URLHost, ReWriteHost: hostRewrite})
 	}
 
 	resources.Resources = res

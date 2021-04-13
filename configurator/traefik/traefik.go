@@ -107,6 +107,7 @@ func (m Middleware) String() string {
 	if err != nil {
 		fmt.Println("fail to parse struct: " + err.Error())
 	}
+
 	return string(o)
 }
 
