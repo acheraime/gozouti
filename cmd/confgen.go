@@ -31,6 +31,7 @@ var (
 	cfgRedirectHOST  string
 	cfgRedirectProxy string
 	cfgDry           bool
+	cfgURLRewrite    bool
 )
 
 // confgenCmd represents the confgen command
@@ -56,6 +57,7 @@ to quickly create a Cobra application.`,
 			DryRun:              cfgDry,
 			RedirectAlias:       cfgRedirectAlias,
 			RedirectBaseHostURL: cfgRedirectHOST,
+			RedirectRewriteHost: cfgURLRewrite,
 		})
 		if err != nil {
 			fmt.Println(err.Error())
@@ -93,6 +95,7 @@ func init() {
 	confgenCmd.Flags().StringVarP(&cfgRedirectAlias, "redirect-alias", "a", "", "Alias that will be added to traefik redirect middleware")
 	confgenCmd.Flags().StringVarP(&cfgRedirectHOST, "redirect-host", "H", "", "host name part of the base url for location only redirects")
 	confgenCmd.Flags().BoolVar(&cfgDry, "dry", false, "dry run will simulate the configuration and print it to stdout")
+	confgenCmd.Flags().BoolVar(&cfgURLRewrite, "rewrite-host", false, "completely replace destination host")
 	//Required flags
 	confgenCmd.MarkFlagRequired("input")
 	// Here you will define your flags and configuration settings.
