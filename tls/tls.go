@@ -77,3 +77,10 @@ func DecodePemChain(chain []byte) ([]*x509.Certificate, error) {
 func (c ParsedCertificate) IsValid() bool {
 	return c.Certificate.NotAfter.After(time.Now())
 }
+
+func (c ParsedCertificate) ValidityPeriod() string {
+	validFrom := c.Certificate.NotBefore.Format(time.RFC822)
+	validTo := c.Certificate.NotAfter.Format(time.RFC822)
+
+	return validFrom + " - " + validTo
+}
