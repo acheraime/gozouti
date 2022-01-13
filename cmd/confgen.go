@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/acheraime/certutils/configurator"
-	"github.com/acheraime/certutils/utils"
+	"github.com/acheraime/gozouti/configurator"
+	"github.com/acheraime/gozouti/utils"
 	"github.com/spf13/cobra"
 )
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/acheraime/certutils/backend"
-	"github.com/acheraime/certutils/utils"
+	"github.com/acheraime/gozouti/backend"
+	"github.com/acheraime/gozouti/utils"
 )
 
 type Migrator struct {

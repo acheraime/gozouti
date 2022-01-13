@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/acheraime/certutils/backend"
-	"github.com/acheraime/certutils/configurator/input"
-	"github.com/acheraime/certutils/configurator/processor"
+	"github.com/acheraime/gozouti/backend"
+	"github.com/acheraime/gozouti/configurator/input"
+	"github.com/acheraime/gozouti/configurator/processor"
 )
 
 type ConfigType string

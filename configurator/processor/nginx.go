@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/acheraime/certutils/utils"
+	"github.com/acheraime/gozouti/utils"
 )
 
 type NginxRedirect struct {

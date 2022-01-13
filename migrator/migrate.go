@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/acheraime/certutils/tls"
+	"github.com/acheraime/gozouti/tls"
 )
 
 const (

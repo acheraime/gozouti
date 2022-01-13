@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/acheraime/certutils/utils"
+	"github.com/acheraime/gozouti/utils"
 	v1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefik/v1alpha1"
 )
 

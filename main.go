@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/acheraime/certutils/cmd"
+import "github.com/acheraime/gozouti/cmd"
 
 func main() {
 	cmd.Execute()

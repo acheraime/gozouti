@@ -9,9 +9,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/acheraime/certutils/backend"
-	"github.com/acheraime/certutils/configurator/traefik"
-	"github.com/acheraime/certutils/utils"
+	"github.com/acheraime/gozouti/backend"
+	"github.com/acheraime/gozouti/configurator/traefik"
+	"github.com/acheraime/gozouti/utils"
 )
 
 type TraefikRedirect struct {

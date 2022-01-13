@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/acheraime/certutils/utils"
+	"github.com/acheraime/gozouti/utils"
 )
 
 type RedirectResources struct {

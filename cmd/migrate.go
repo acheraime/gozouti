@@ -19,8 +19,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/acheraime/certutils/backend"
-	"github.com/acheraime/certutils/migrator"
+	"github.com/acheraime/gozouti/backend"
+	"github.com/acheraime/gozouti/migrator"
 	"github.com/spf13/cobra"
 )
 

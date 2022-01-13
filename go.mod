@@ -1,4 +1,4 @@
-module github.com/acheraime/certutils
+module github.com/acheraime/gozouti
 
 go 1.14
 
